@@ -46,12 +46,13 @@ runs:
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
-        git checkout ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} 2>/dev/null || git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
+        git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
         git push origin ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
         git checkout ${{ github.event.repository.default_branch }}
 
     - name: Checkout cherry-pick branch
       id: cherry-pick-branch
+      if: failure() && steps.create-release-branch.outcome == 'failure'
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
@@ -62,6 +63,7 @@ runs:
 
     - name: Create PR to Release Branch
       id: pr-to-release-branch
+      if: failure() && steps.cherry-pick-branch.outcome == 'success'
       shell: bash
       run: |
         gh pr create --base ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} --head ${cherryPickBranch} --title "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}" --body "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
