@@ -24,8 +24,8 @@ runs:
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
-        git pull --unshallow
-        git fetch --tags
+        git fetch --all
+        git pull --all
 
     - name: Get major and minor version
       id: major-minor
