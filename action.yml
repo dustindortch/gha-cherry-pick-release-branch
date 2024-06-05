@@ -58,10 +58,11 @@ runs:
         currentCommitHash=$(git rev-parse ${{ inputs.tag }}^0)
         git checkout -b cherry-pick/${currentCommitHash} ${currentCommitHash}
         git push origin cherry-pick/${currentCommitHash}
+        echo "cherryPickBranch=cherry-pick/${currentCommitHash}" | tee -a $GITHUB_ENV
 
     - name: Create PR to Release Branch
       id: pr-to-release-branch
       shell: bash
       run: |
-        gh pr create --base ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} --head cherry-pick/${currentCommitHash} --title "Cherry-pick ${currentCommitHash} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}" --body "Cherry-pick ${currentCommitHash} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
+        gh pr create --base ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} --head ${cherryPickBranch} --title "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}" --body "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
 ...
