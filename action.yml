@@ -47,6 +47,7 @@ runs:
       run: |
         cd $GITHUB_WORKSPACE
         git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
+        git commit --allow-empty -m "Release branch ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
         git push origin ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
         git checkout ${{ github.event.repository.default_branch }}
 
