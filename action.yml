@@ -1,0 +1,58 @@
+---
+author: Dustin Dortch
+name: Cherry-pick to Release Branch
+description: Cherry-picks a commit (based on tag) to a release branch.
+
+inputs:
+  prefix:
+    default: 'v'
+    description: 'Version tag prefix (default: v)'
+    required: false
+  branch_prefix:
+    default: 'release'
+    description: 'Branch prefix (default: release)'
+    required: false
+  tag:
+    description: 'Tag to cherry-pick'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Full git history
+      id: git-history
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE
+        git pull --unshallow
+        git fetch --tags
+
+    - name: Get major and minor version
+      id: major-minor
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE
+        version=${{ inputs.tag}}
+        RELEASE_VERSION="${version//${{ inputs.prefix }}}"
+        echo "Release version: ${RELEASE_VERSION}"
+        IFS='.' read -r major minor patch <<< $RELEASE_VERSION
+        echo "major=$major" | tee -a $GITHUB_ENV
+        echo "minor=$minor" | tee -a $GITHUB_ENV
+        echo "patch=$patch" | tee -a $GITHUB_ENV
+        echo "version=$version" | tee -a $GITHUB_OUTPUT
+
+    - name: Checkout release branch
+      id: new-version
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE
+        git checkout ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} 2>/dev/null || git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
+
+    - name: Cherry-pick
+      id: cherry-pick
+      shell: bash
+      run: |
+        cd $GITHUB_WORKSPACE
+        tag_hash=$(git rev-parse ${{ inputs.tag }}^0)
+        git cherry-pick ${{ inputs.tag }}
+...
