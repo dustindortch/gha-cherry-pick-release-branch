@@ -57,7 +57,7 @@ runs:
         cd $GITHUB_WORKSPACE
         currentCommitHash=$(git rev-parse ${{ inputs.tag }}^0)
         git checkout -b cherry-pick/${currentCommitHash} ${currentCommitHash}
-        git push --mirror origin cherry-pick/${currentCommitHash}
+        git push origin cherry-pick/${currentCommitHash}
 
     - name: Create PR to Release Branch
       id: pr-to-release-branch
