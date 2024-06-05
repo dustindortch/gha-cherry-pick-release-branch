@@ -40,19 +40,28 @@ runs:
         echo "minor=$minor" | tee -a $GITHUB_ENV
         echo "patch=$patch" | tee -a $GITHUB_ENV
         echo "version=$version" | tee -a $GITHUB_OUTPUT
-
-    - name: Checkout release branch
-      id: new-version
+    
+    - name: Create Release Branch (if necessary)
+      id: create-release-branch
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
         git checkout ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} 2>/dev/null || git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
+        git push
+        git checkout ${{ github.event.repository.default_branch }}
 
-    - name: Cherry-pick
-      id: cherry-pick
+    - name: Checkout cherry-pick branch
+      id: cherry-pick-branch
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
-        tag_hash=$(git rev-parse ${{ inputs.tag }}^0)
-        git cherry-pick ${{ inputs.tag }}
+        currentCommitHash=$(git rev-parse ${{ inputs.tag }}^0)
+        git checkout -b cherry-pick/${currentCommitHash} ${currentCommitHash}
+        git push --mirror
+
+    - name: Create PR to Release Branch
+      id: pr-to-release-branch
+      shell: bash
+      run: |
+        gh pr create --base ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} --head cherry-pick/${currentCommitHash} --title "Cherry-pick ${currentCommitHash} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}" --body "Cherry-pick ${currentCommitHash} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
 ...
