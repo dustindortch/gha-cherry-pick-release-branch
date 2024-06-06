@@ -34,7 +34,7 @@ runs:
         echo "major=${major}" | tee -a $GITHUB_ENV
         echo "minor=${minor}" | tee -a $GITHUB_ENV
         echo "patch=${patch}" | tee -a $GITHUB_ENV
-        echo "branch_prefix=${{ inputs.branch_prefix }}" | tee -a $GITHUB_ENV
+        branch_prefix="${{ inputs.branch_prefix }}" && echo "branch_prefix=${branch_prefix}" | tee -a $GITHUB_ENV
         prefix="${{ inputs.prefix }}" && echo "prefix=${prefix}" | tee -a $GITHUB_ENV
         echo "release_branch=${branch_prefix}/${prefix}${major}.${minor}" | tee -a $GITHUB_ENV
         echo "default_branch=${{ inputs.default_branch }}" | tee -a $GITHUB_ENV
