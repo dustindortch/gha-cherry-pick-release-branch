@@ -28,13 +28,13 @@ runs:
       shell: bash
       run: |
         version="${{ inputs.tag }}"
-        echo "RELEASE_VERSION=${version//${{ inputs.prefix }}}" | tee -a $GITHUB_ENV
+        RELEASE_VERSION="${version//${{ inputs.prefix }}}" && echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
         IFS='.' read -r major minor patch <<< $RELEASE_VERSION
-        echo "major=$major" | tee -a $GITHUB_ENV
-        echo "minor=$minor" | tee -a $GITHUB_ENV
-        echo "patch=$patch" | tee -a $GITHUB_ENV
+        echo "major=${major}" | tee -a $GITHUB_ENV
+        echo "minor=${minor}" | tee -a $GITHUB_ENV
+        echo "patch=${patch}" | tee -a $GITHUB_ENV
         echo "branch_prefix=${{ inputs.branch_prefix }}" | tee -a $GITHUB_ENV
-        echo "prefix=${{ inputs.prefix }}" | tee -a $GITHUB_ENV
+        prefix="${{ inputs.prefix }}" && echo "prefix=${prefix}" | tee -a $GITHUB_ENV
         echo "release_branch=${branch_prefix}/${prefix}${major}.${minor}" | tee -a $GITHUB_ENV
         echo "default_branch=${{ inputs.default_branch }}" | tee -a $GITHUB_ENV
 
