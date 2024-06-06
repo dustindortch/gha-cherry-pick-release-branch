@@ -1,6 +1,6 @@
 ---
 author: Dustin Dortch
-name: Cherry-pick to Release Branch
+name: Cherry-pick PR to Release Branch
 description: Cherry-picks a commit (based on tag) to a release branch.
 
 inputs:
@@ -76,5 +76,6 @@ runs:
       shell: bash
       run: |
         echo "Create PR to Release Branch"
+        cd $GITHUB_WORKSPACE
         gh pr create --base ${release_branch} --head ${cherryPickBranch} --fill
 ...
