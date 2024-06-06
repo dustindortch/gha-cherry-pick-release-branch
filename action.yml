@@ -15,10 +15,29 @@ inputs:
   tag:
     description: 'Tag to cherry-pick'
     required: true
+  default_branch:
+    default: ${{ github.event.repository.default_branch }}
+    description: 'Default branch'
+    required: false
 
 runs:
   using: composite
   steps:
+    - name: Set environment variables
+      id: set-env
+      shell: bash
+      run: |
+        echo "VERSION=${{ inputs.tag }}" | tee -a $GITHUB_ENV
+        echo "RELEASE_VERSION=${version//${{ inputs.prefix }}}" | tee -a $GITHUB_ENV
+        IFS='.' read -r major minor patch <<< $RELEASE_VERSION
+        echo "major=$major" | tee -a $GITHUB_ENV
+        echo "minor=$minor" | tee -a $GITHUB_ENV
+        echo "patch=$patch" | tee -a $GITHUB_ENV
+        echo "branch_prefix=${{ inputs.branch_prefix }}" | tee -a $GITHUB_ENV
+        echo "prefix=${{ inputs.prefix }}" | tee -a $GITHUB_ENV
+        echo "release_branch=${branch_prefix}/${prefix}${major}.${minor}" | tee -a $GITHUB_ENV
+        echo "default_branch=${{ inputs.default_branch }}" | tee -a $GITHUB_ENV
+
     - name: Full git history
       id: git-history
       shell: bash
@@ -27,33 +46,19 @@ runs:
         git fetch --all
         git pull --all
 
-    - name: Get major and minor version
-      id: major-minor
-      shell: bash
-      run: |
-        cd $GITHUB_WORKSPACE
-        version=${{ inputs.tag}}
-        RELEASE_VERSION="${version//${{ inputs.prefix }}}"
-        echo "Release version: ${RELEASE_VERSION}"
-        IFS='.' read -r major minor patch <<< $RELEASE_VERSION
-        echo "major=$major" | tee -a $GITHUB_ENV
-        echo "minor=$minor" | tee -a $GITHUB_ENV
-        echo "patch=$patch" | tee -a $GITHUB_ENV
-        echo "version=$version" | tee -a $GITHUB_OUTPUT
     
     - name: Create Release Branch (if necessary)
       id: create-release-branch
       shell: bash
-      run: |
-        cd $GITHUB_WORKSPACE
-        git checkout -b ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
-        git commit --allow-empty -m "Release branch ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
-        git push origin ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}
-        git checkout ${{ github.event.repository.default_branch }}
+      run: >
+        cd $GITHUB_WORKSPACE; 
+        git checkout --orphan ${{ env.release_branch }} &&
+        git commit --allow-empty -m "Release branch  ${{ env.release_branch }}" && 
+        git push origin ${{ env.release_branch }} &&
+        git checkout ${{ env.default_branch }} || true
 
     - name: Checkout cherry-pick branch
       id: cherry-pick-branch
-      if: failure() && steps.create-release-branch.outcome == 'failure'
       shell: bash
       run: |
         cd $GITHUB_WORKSPACE
@@ -66,6 +71,10 @@ runs:
       id: pr-to-release-branch
       if: failure() && steps.cherry-pick-branch.outcome == 'success'
       shell: bash
-      run: |
-        gh pr create --base ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor} --head ${cherryPickBranch} --title "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}" --body "PR ${cherryPickBranch} to ${{ inputs.branch_prefix }}/${{ inputs.prefix }}${major}.${minor}"
+      run: >
+        gh pr create 
+        --base ${{ env.release_branch }} 
+        --head ${cherryPickBranch} 
+        --title "PR ${cherryPickBranch} to ${{ env.release_branch }}" 
+        --body "PR ${cherryPickBranch} to ${{ env.release_branch }}"
 ...
