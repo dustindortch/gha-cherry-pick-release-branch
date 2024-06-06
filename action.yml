@@ -27,7 +27,8 @@ runs:
       id: set-env
       shell: bash
       run: |
-        echo "RELEASE_VERSION=${${{ inputs.tag }}//${{ inputs.prefix }}}" | tee -a $GITHUB_ENV
+        version="${{ inputs.tag }}"
+        echo "RELEASE_VERSION=${version//${{ inputs.prefix }}}" | tee -a $GITHUB_ENV
         IFS='.' read -r major minor patch <<< $RELEASE_VERSION
         echo "major=$major" | tee -a $GITHUB_ENV
         echo "minor=$minor" | tee -a $GITHUB_ENV
