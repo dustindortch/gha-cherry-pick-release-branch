@@ -38,6 +38,8 @@ runs:
         prefix="${{ inputs.prefix }}" && echo "prefix=${prefix}" | tee -a $GITHUB_ENV
         echo "release_branch=${branch_prefix}/${prefix}${major}.${minor}" | tee -a $GITHUB_ENV
         echo "default_branch=${{ inputs.default_branch }}" | tee -a $GITHUB_ENV
+        currentCommitHash=$(git rev-parse ${{ inputs.tag }}^0) && echo "currentCommitHash=${currentCommitHash}" | tee -a $GITHUB_ENV
+        echo "cherryPickBranch=cherry-pick/${currentCommitHash}" | tee -a $GITHUB_ENV
 
     - name: Full git history
       id: git-history
@@ -56,7 +58,7 @@ runs:
         echo "Create Release Branch (if necessary)"; 
         cd $GITHUB_WORKSPACE; 
         git checkout --orphan ${{ env.release_branch }} && 
-        git commit --allow-empty -m "Release branch  ${{ env.release_branch }}" && 
+        git commit --allow-empty -m "Release branch ${{ env.release_branch }}" && 
         git push origin ${{ env.release_branch }} && 
         git checkout ${{ env.default_branch }} || true
 
@@ -66,20 +68,17 @@ runs:
       run: |
         echo "Checkout cherry-pick branch"
         cd $GITHUB_WORKSPACE
-        currentCommitHash=$(git rev-parse ${{ inputs.tag }}^0)
-        echo "cherryPickBranch=cherry-pick/${currentCommitHash}" | tee -a $GITHUB_ENV
         git checkout -b ${cherryPickBranch} ${currentCommitHash}
         git push origin ${cherryPickBranch}
 
     - name: Create PR to Release Branch
       id: pr-to-release-branch
-      if: failure() && steps.cherry-pick-branch.outcome == 'success'
       shell: bash
       run: >
         echo "Create PR to Release Branch"; 
         gh pr create 
-        --base ${{ env.release_branch }} 
+        --base ${release_branch} 
         --head ${cherryPickBranch} 
-        --title "PR ${cherryPickBranch} to ${{ env.release_branch }}" 
-        --body "PR ${cherryPickBranch} to ${{ env.release_branch }}"
+        --title "PR ${cherryPickBranch} to ${release_branch}" 
+        --body "PR ${cherryPickBranch} to ${release_branch}"
 ...
